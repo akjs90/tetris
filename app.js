@@ -7,6 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let timerId = null;
     let score = 0;
     const colors = ['#f2a77e', '#9dc458', '#42b2b8', '#8f8bd9', '#b55ea9'];
+    let endGame=false;
 
     const jTetromino = [
         [1, width + 1, width * 2 + 1, 2],
@@ -118,7 +119,9 @@ document.addEventListener("DOMContentLoaded", () => {
         if (currentRotation === current.length)
             currentRotation = 0;
         current = theTetriminos[random][currentRotation];
+        checkRotatedPosition();
         draw();
+
     }
     function control(e) {
         if (e.keyCode === 37)
@@ -161,10 +164,22 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     startBtn.addEventListener("click", () => {
+        if(endGame){
+            //restart new game
+            for(let i=0;i<=199;i++){
+                score=0;
+                scoreDisplay.innerHTML='0';
+                squares[i].classList.remove('tetrimino');
+                squares[i].classList.remove('taken');
+                squares[i].style.backgroundColor='';
+            }
+            endGame=false;
+            startBtn.innerHTML="Start/Pause";
+        }
         if (timerId) {
             clearInterval(timerId);
             timerId = null;
-        } else {
+        } else{
             draw();
             timerId = setInterval(moveDown, 1000);
             nextRandom = Math.floor(Math.random() * theTetriminos.length);
@@ -183,7 +198,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 row.forEach(index => {
                     squares[index].classList.remove('tetrimino');
                     squares[index].classList.remove('taken');
-                    squares[index].style.backgroundColor=''
+                    squares[index].style.backgroundColor = ''
                 })
                 const squaresRemoved = squares.splice(i, width);
                 squares = squaresRemoved.concat(squares);
@@ -198,8 +213,34 @@ document.addEventListener("DOMContentLoaded", () => {
             scoreDisplay.innerHTML = "end";
             clearInterval(timerId);
             timerId = null;
+            endGame=true;
+            startBtn.innerHTML="New Game";
         }
     }
 
+    ///FIX ROTATION OF TETROMINOS A THE EDGE 
+    function isAtRight() {
+        return current.some(index => (currentPosition + index) % width === width - 1)
+    }
 
+    function isAtLeft() {
+        return current.some(index => (currentPosition + index) % width === 0)
+    }
+
+    //rotation at edge bug fix
+    function checkRotatedPosition(P) {
+        P = P || currentPosition       //get current position.  Then, check if the piece is near the left side.
+        if ((P + 1) % width < 4) {         //add 1 because the position index can be 1 less than where the piece is (with how they are indexed).     
+            if (isAtRight()) {            //use actual position to check if it's flipped over to right side
+                currentPosition += 1    //if so, add one to wrap it back around
+                checkRotatedPosition(P) //check again.  Pass position from start, since long block might need to move more.
+            }
+        }
+        else if (P % width > 5) {
+            if (isAtLeft()) {
+                currentPosition -= 1
+                checkRotatedPosition(P)
+            }
+        }
+    }
 })
